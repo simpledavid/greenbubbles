@@ -9,5 +9,10 @@ public struct FileHelperKnowledgeView: View {
     _model = State(initialValue: KnowledgeAppModel(storageName: storageName))
   }
 
+  /// Keep this model in the host app when switching between workspace tabs.
+  public init(model: KnowledgeAppModel) {
+    _model = State(initialValue: model)
+  }
+
   public var body: some View { KnowledgeRootView(model: model) }
 }

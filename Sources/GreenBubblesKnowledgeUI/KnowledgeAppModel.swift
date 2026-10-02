@@ -11,7 +11,7 @@ enum KnowledgeSheet: String, Identifiable {
 
 @MainActor
 @Observable
-final class KnowledgeAppModel {
+public final class KnowledgeAppModel {
   var items: [KnowledgeItem] = []
   var selectedID: String?
   var query = ""
@@ -38,7 +38,7 @@ final class KnowledgeAppModel {
   private var loadGeneration = 0
   private var didStart = false
 
-  init(storageName: String = "GreenBubblesKnowledge") {
+  public init(storageName: String = "GreenBubblesKnowledge") {
     let defaults = UserDefaults.standard
     executablePath = defaults.string(forKey: "knowledge.executable") ?? ""
     if executablePath.isEmpty {

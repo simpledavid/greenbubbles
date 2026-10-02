@@ -1,8 +1,10 @@
 import SwiftUI
 
 public struct GreenBubblesHistoryView: View {
-  @State private var model = HistoryBrowserModel(arguments: [])
-  public init() {}
+  @State private var model: HistoryBrowserModel
+  public init(model: HistoryBrowserModel? = nil) {
+    _model = State(initialValue: model ?? HistoryBrowserModel(arguments: []))
+  }
 
   public var body: some View {
     VStack(spacing: 0) {

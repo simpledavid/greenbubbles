@@ -41,7 +41,6 @@ struct KnowledgeRootView: View {
       }
     }
     .tint(knowledgeAccent)
-    .navigationTitle("文件传输助手 · 知识库")
     .toolbar {
       ToolbarItemGroup {
         if model.isSyncing {
