@@ -2,10 +2,12 @@ import AppKit
 import GreenBubblesHistory
 import SwiftUI
 
-struct HistoryRootView: View {
+public struct HistoryRootView: View {
   @Bindable var model: HistoryBrowserModel
 
-  var body: some View {
+  public init(model: HistoryBrowserModel) { self.model = model }
+
+  public var body: some View {
     Group {
       if model.isDirectConnecting {
         HistoryDirectConnectingView {

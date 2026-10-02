@@ -62,7 +62,7 @@ struct HistoryMediaRequest: Identifiable {
 
 @MainActor
 @Observable
-final class HistoryBrowserModel {
+public final class HistoryBrowserModel {
   var session: HistoryBundleSession?
   var loadProgress: HistoryLoadProgress?
   var isLoading = false
@@ -146,7 +146,7 @@ final class HistoryBrowserModel {
   private let snapshotUnlockSessionURL = FileManager.default.temporaryDirectory.appending(
     path: "greenbubbles-history-unlock-\(UUID().uuidString)", directoryHint: .isDirectory)
 
-  init(
+  public init(
     arguments: [String] = Array(CommandLine.arguments.dropFirst()),
     currentDirectoryURL: URL = URL(
       fileURLWithPath: FileManager.default.currentDirectoryPath,
@@ -194,7 +194,7 @@ final class HistoryBrowserModel {
     try? FileManager.default.removeItem(at: snapshotUnlockSessionURL)
   }
 
-  var hasOpenHistory: Bool {
+  public var hasOpenHistory: Bool {
     session != nil || directConfiguration != nil
   }
 
@@ -257,12 +257,12 @@ final class HistoryBrowserModel {
     )
   }
 
-  func presentDirectConnection() {
+  public func presentDirectConnection() {
     libraryError = nil
     showsDirectConnection = true
   }
 
-  func presentSnapshotCreation() {
+  public func presentSnapshotCreation() {
     libraryError = nil
     showsSnapshotCreation = true
   }
@@ -594,7 +594,7 @@ final class HistoryBrowserModel {
     }
   }
 
-  func chooseBundle() {
+  public func chooseBundle() {
     let panel = NSOpenPanel()
     panel.title = "Open GreenBubbles AI Context Bundle"
     panel.message =
@@ -616,7 +616,7 @@ final class HistoryBrowserModel {
     openBundle(pendingStartupBundleURL)
   }
 
-  func openExternalURLs(_ urls: [URL]) {
+  public func openExternalURLs(_ urls: [URL]) {
     guard urls.count == 1, let url = urls.first else {
       libraryError = "Open one history bundle at a time."
       return
@@ -704,7 +704,7 @@ final class HistoryBrowserModel {
     }
   }
 
-  func closeBundle() {
+  public func closeBundle() {
     loadTask?.cancel()
     timelineTask?.cancel()
     activeLoadID = UUID()

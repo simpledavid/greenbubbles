@@ -1,5 +1,5 @@
 import AppKit
-import GreenBubblesHistory
+import GreenBubblesHistoryUI
 import SwiftUI
 
 @main

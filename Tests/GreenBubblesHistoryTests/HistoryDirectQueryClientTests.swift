@@ -6,6 +6,40 @@ import Testing
 
 @Suite("HistoryDirectQueryClientTests")
 struct HistoryDirectQueryClientTests {
+  @Test("requests raw JSON for message pages rather than the CLI's brief default")
+  func requestsRawMessages() async throws {
+    let response =
+      #"{"schema":"greenbubbles.query.v1","formatVersion":1,"operation":"messages.list","ok":true,"source":{"mode":"decrypted","identity":"fixture"},"consistency":{"guarantee":"bounded","databaseCount":1,"crossDatabaseAtomic":false,"coverageComplete":true,"observedAtUnixMilliseconds":1},"page":{"limit":100,"returned":0,"hasMore":false},"warnings":[],"items":[]}"#
+    let fixture = try DirectQueryFixture(response: response)
+    defer { fixture.remove() }
+    let page = try await HistoryDirectQueryClient().messages(
+      configuration: fixture.configuration(mode: .decrypted), keyUTF8: [],
+      conversationID: "filehelper", limit: 100)
+    #expect(page.items.isEmpty)
+    #expect(try fixture.arguments().contains("--json"))
+  }
+
+  @Test("validates attachment envelopes without requiring a query source field")
+  func decodesAttachmentEnvelope() async throws {
+    let response =
+      #"{"schema":"greenbubbles.attachment.v1","formatVersion":1,"operation":"attachment.inspect","ok":true,"kind":"document","availability":"downloaded","preferredAttachmentId":"opaque-a","preferredSourceFormat":"pdf"}"#
+    let fixture = try DirectQueryFixture(response: response)
+    defer { fixture.remove() }
+    let key = String(repeating: "b", count: 64)
+    let result = try await HistoryDirectQueryClient().inspectKnowledgeAttachment(
+      configuration: fixture.configuration(mode: .liveEncrypted), keyUTF8: Array(key.utf8),
+      messageID: "opaque-message", kind: "document")
+    #expect(result.preferredAttachmentId == "opaque-a")
+    #expect(
+      try fixture.arguments() == [
+        "attachment", "inspect", fixture.sourceURL.path,
+        "--conversation", "filehelper", "--message", "opaque-message", "--kind", "document",
+        "--passphrase-stdin",
+      ])
+    #expect(try fixture.standardInput() == Data("\(key)\n".utf8))
+    #expect(!fixture.argumentsText().contains(key))
+  }
+
   @Test("sends the snapshot key only through stdin and decodes a bounded page")
   func decodesConversationPage() async throws {
     let fixture = try DirectQueryFixture(response: conversationResponse)
@@ -54,7 +88,7 @@ struct HistoryDirectQueryClientTests {
     #expect(
       try fixture.arguments()
         == [
-          "messages", "search", fixture.sourceURL.path, "--query-stdin", "--limit", "7",
+          "messages", "search", fixture.sourceURL.path, "--query-stdin", "--limit", "7", "--json",
           "--conversation", "chat-a", "--cursor", "cursor-search", "--passphrase-stdin",
         ])
     #expect(try fixture.standardInput() == Data("\(key)\n\(query)".utf8))
