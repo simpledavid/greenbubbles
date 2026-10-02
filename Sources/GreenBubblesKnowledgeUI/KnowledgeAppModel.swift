@@ -64,7 +64,13 @@ final class KnowledgeAppModel {
     if let index = arguments.firstIndex(of: "--library"), arguments.indices.contains(index + 1) {
       libraryPath = arguments[index + 1]
     }
-    isDemo = arguments.contains("--demo")
+    isDemo = arguments.contains("--demo") || arguments.contains("--wechat-preview")
+    if isDemo && !arguments.contains("--library") {
+      libraryPath =
+        FileManager.default.temporaryDirectory
+        .appending(path: "GreenBubblesKnowledgeDemo-\(ProcessInfo.processInfo.processIdentifier)")
+        .path
+    }
     autoSync = !isDemo && defaults.bool(forKey: "knowledge.autoSync")
   }
 
