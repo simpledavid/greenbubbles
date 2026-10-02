@@ -26,6 +26,9 @@ let package = Package(
       name: "greenbubbles-history",
       targets: ["GreenBubblesHistoryApp"]
     ),
+    .executable(name: "greenbubbles-knowledge", targets: ["GreenBubblesKnowledgeApp"]),
+    .library(name: "GreenBubblesKnowledgeUI", targets: ["GreenBubblesKnowledgeUI"]),
+    .library(name: "GreenBubblesHistoryUI", targets: ["GreenBubblesHistoryUI"]),
     .executable(
       name: "greenbubbles-send",
       targets: ["GreenBubblesSendCLI"]
@@ -61,7 +64,20 @@ let package = Package(
     ),
     .executableTarget(
       name: "GreenBubblesHistoryApp",
+      dependencies: ["GreenBubblesHistoryUI"]
+    ),
+    .target(
+      name: "GreenBubblesHistoryUI",
       dependencies: ["GreenBubblesHistory"],
+      linkerSettings: [.linkedFramework("Security")]
+    ),
+    .executableTarget(
+      name: "GreenBubblesKnowledgeApp",
+      dependencies: ["GreenBubblesKnowledgeUI"]
+    ),
+    .target(
+      name: "GreenBubblesKnowledgeUI",
+      dependencies: ["GreenBubblesHistory", "GreenBubblesCore"],
       linkerSettings: [.linkedFramework("Security")]
     ),
     .executableTarget(

@@ -4,6 +4,9 @@
 
 <h1 align="center">GreenBubbles</h1>
 
+This fork adds a local File Helper knowledge library and embeddable history/knowledge
+SwiftUI views for Tars. See [File Helper knowledge](docs/FILEHELPER_KNOWLEDGE.md).
+
 <p align="center">
   <strong>Enable your AI agents to access your WeChat history in real time.</strong><br>
   Mac CLI + skills for agents. Local storage only.

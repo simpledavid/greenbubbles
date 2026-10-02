@@ -450,7 +450,7 @@ public struct HistoryDirectQueryClient: Sendable {
     }
     var arguments = [
       "messages", "list", configuration.sourceURL.path,
-      "--conversation", conversationID, "--limit", String(limit),
+      "--conversation", conversationID, "--limit", String(limit), "--json",
     ]
     if let cursor { arguments += ["--cursor", cursor] }
     return try await request(
@@ -499,7 +499,7 @@ public struct HistoryDirectQueryClient: Sendable {
     else { throw HistoryDirectQueryError.invalidQuery }
     var arguments = [
       "messages", "search", configuration.sourceURL.path,
-      "--query-stdin", "--limit", String(limit),
+      "--query-stdin", "--limit", String(limit), "--json",
     ]
     if let conversationID {
       guard !conversationID.isEmpty else { throw HistoryDirectQueryError.invalidQuery }
@@ -516,13 +516,43 @@ public struct HistoryDirectQueryClient: Sendable {
     )
   }
 
+  public func inspectKnowledgeAttachment(
+    configuration: HistoryDirectConfiguration, keyUTF8: [UInt8],
+    messageID: String, kind: String
+  ) async throws -> KnowledgeAttachmentInspection {
+    try await request(
+      configuration: configuration, keyUTF8: keyUTF8, operation: "attachment.inspect",
+      arguments: [
+        "attachment", "inspect", configuration.sourceURL.path,
+        "--conversation", "filehelper", "--message", messageID, "--kind", kind,
+      ],
+      query: nil, type: KnowledgeAttachmentInspection.self,
+      expectedSchema: "greenbubbles.attachment.v1", validatesSource: false)
+  }
+
+  public func materializeKnowledgeAttachment(
+    configuration: HistoryDirectConfiguration, keyUTF8: [UInt8],
+    messageID: String, kind: String, attachmentID: String, output: URL
+  ) async throws -> KnowledgeAttachmentMaterialization {
+    try await request(
+      configuration: configuration, keyUTF8: keyUTF8, operation: "attachment.materialize",
+      arguments: [
+        "attachment", "materialize", configuration.sourceURL.path,
+        "--conversation", "filehelper", "--message", messageID, "--kind", kind,
+        "--attachment", attachmentID, "--output", output.path,
+      ],
+      query: nil, type: KnowledgeAttachmentMaterialization.self,
+      expectedSchema: "greenbubbles.attachment.v1", validatesSource: false)
+  }
+
   private func request<Response: Decodable & Sendable>(
     configuration: HistoryDirectConfiguration,
     keyUTF8: [UInt8],
     operation: String,
     arguments: [String],
     query: [UInt8]?,
-    type: Response.Type
+    type: Response.Type,
+    expectedSchema: String = "greenbubbles.query.v1", validatesSource: Bool = true
   ) async throws -> Response {
     let key = DirectSecureBytes(copying: keyUTF8)
     let queryBytes = query.map(DirectSecureBytes.init(copying:))
@@ -537,7 +567,7 @@ public struct HistoryDirectQueryClient: Sendable {
         operation: operation,
         arguments: arguments,
         query: queryBytes,
-        type: type
+        type: type, expectedSchema: expectedSchema, validatesSource: validatesSource
       )
     }
     return try await withTaskCancellationHandler {
@@ -553,7 +583,7 @@ public struct HistoryDirectQueryClient: Sendable {
     operation: String,
     arguments: [String],
     query: DirectSecureBytes?,
-    type: Response.Type
+    type: Response.Type, expectedSchema: String, validatesSource: Bool
   ) throws -> Response {
     try validateDirectExecutable(configuration.executableURL)
     try validateDirectSource(configuration.sourceURL)
@@ -668,7 +698,7 @@ public struct HistoryDirectQueryClient: Sendable {
     }
     if process.terminationStatus != 0 {
       if let envelope = try? JSONDecoder().decode(DirectErrorEnvelope.self, from: stdout),
-        envelope.schema == Self.schema, envelope.formatVersion == 1,
+        envelope.schema == expectedSchema, envelope.formatVersion == 1,
         envelope.operation == operation, envelope.ok == false
       {
         throw HistoryDirectQueryError.commandFailed(
@@ -680,10 +710,11 @@ public struct HistoryDirectQueryClient: Sendable {
       throw HistoryDirectQueryError.invalidResponse
     }
     guard let envelope = try? JSONDecoder().decode(DirectSuccessIdentity.self, from: stdout),
-      envelope.schema == Self.schema, envelope.formatVersion == 1,
+      envelope.schema == expectedSchema, envelope.formatVersion == 1,
       envelope.operation == operation, envelope.ok,
-      envelope.source.mode == configuration.accessMode.responseMode,
-      !envelope.source.identity.isEmpty
+      !validatesSource
+        || (envelope.source?.mode == configuration.accessMode.responseMode
+          && envelope.source?.identity.isEmpty == false)
     else { throw HistoryDirectQueryError.invalidResponse }
     guard let response = try? JSONDecoder().decode(type, from: stdout) else {
       throw HistoryDirectQueryError.invalidResponse
@@ -800,7 +831,7 @@ private struct DirectSuccessIdentity: Decodable {
   let formatVersion: Int
   let operation: String
   let ok: Bool
-  let source: HistoryDirectSource
+  let source: HistoryDirectSource?
 }
 
 private struct DirectErrorEnvelope: Decodable {
